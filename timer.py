@@ -352,11 +352,6 @@ st.markdown(
 if "dados_locais" not in st.session_state:
     df_original = load_data(force_reload=False)
 
-    if "MORREU" in df_original.columns:
-        df_original = df_original.drop(columns=["MORREU"], axis=1, errors="ignore")
-    if "Reset" in df_original.columns:
-        df_original = df_original.drop(columns=["Reset"], axis=1, errors="ignore")
-
     st.session_state.dados_locais = df_original.copy()
 
 # Sidebar com controles
