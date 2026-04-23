@@ -75,6 +75,7 @@ st.data_editor(
         "Elemento": st.column_config.Column("Elemento", help="Elemento com emoji"),
         "Size": st.column_config.Column("Tamanho", help="Tamanho do monstro"),
         "Element": None,  # oculta a coluna original
+        "Horarios": None,
     },
     use_container_width=True,
     height=600,
