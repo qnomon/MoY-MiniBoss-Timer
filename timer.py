@@ -14,6 +14,21 @@ st.set_page_config(layout="wide")
 st.markdown(
     """
 <style>
+    .slot-current {
+        background-color: #d4edda;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 5px 0;
+    }
+    .slot-past {
+        background-color: #f8d7da;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 5px 0;
+    }
+    .slot-future {
+        /* fundo padrão do Streamlit */
+    }
     .mob-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 10px;
@@ -31,7 +46,7 @@ st.markdown(
         margin-right: 10px;
     }
     .mob-name {
-        color: #ffd500;
+        color: #f2cb07;
         font-weight: bold;
     }
     .mob-map {
@@ -43,7 +58,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("Agenda de Mobs")
+st.title("Agenda de Mobs (UTC-3)")
 
 uploaded_file = "table.csv"
 
@@ -81,82 +96,112 @@ if uploaded_file is not None:
                 {"name": mob_name, "thumb": thumb, "mapa": mapa, "times": converted}
             )
 
-        # Cria slots de 10 em 10 min
-        all_slots = []
-        slots_dict = {}
+        # Cria slots de 10 em 10 min (00:00 a 23:50)
+        all_slots = []  # lista de strings
+        slots_dict_min = {}  # chave = minutos do dia (0-1430)
         for h in range(24):
             for m in (0, 10, 20, 30, 40, 50):
-                slot = f"{h:02d}:{m:02d}"
-                all_slots.append(slot)
-                slots_dict[slot] = []
+                slot_str = f"{h:02d}:{m:02d}"
+                all_slots.append(slot_str)
+                slots_dict_min[h * 60 + m] = []
 
+        # Preenche os slots com os mobs
         for mob in mobs_list:
-            for t in mob["times"]:
-                if t in slots_dict:
-                    slots_dict[t].append(mob)
+            for t_str in mob["times"]:
+                h, m = map(int, t_str.split(":"))
+                min_of_day = h * 60 + m
+                if min_of_day in slots_dict_min:
+                    slots_dict_min[min_of_day].append(mob)
 
-        # Horário atual (UTC-3) e cálculo do slot corrente
+        # Horário atual (UTC-3) em minutos
         now_utc = datetime.now(timezone.utc)
         now_local = now_utc - timedelta(hours=3)
-        current_min = now_local.hour * 60 + now_local.minute
-        current_slot_min = (current_min // 10) * 10
-        current_slot = f"{current_slot_min // 60:02d}:{current_slot_min % 60:02d}"
+        curr_min = now_local.hour * 60 + now_local.minute
 
-        # Ordena os slots: slot atual primeiro, depois futuros (a partir do próximo), depois passados
-        upcoming = []
-        past = []
-        for slot in all_slots:
-            if slot == current_slot:
-                continue  # será inserido manualmente no topo
-            h, m = map(int, slot.split(":"))
-            slot_min = h * 60 + m
-            if slot_min >= current_slot_min + 10:  # próximos horários
-                upcoming.append(slot)
-            else:  # horários já passados
-                past.append(slot)
+        # Início da janela de 20 minutos (slot que será destacado)
+        if curr_min < 10:
+            bucket_start = 1430  # 23:50 (final do dia anterior)
+        else:
+            bucket_start = ((curr_min - 10) // 20) * 20 + 10
 
-        upcoming.sort()  # mais próximo primeiro
-        past.sort(reverse=True)  # passado mais recente primeiro
-        sorted_slots = [current_slot] + upcoming + past
+        # Classifica e ordena os slots
+        current_slot = None
+        future_slots = []  # (minutos, string)
+        past_slots = []  # (minutos, string)
 
-        # Inicializa o estado do botão "expandir todos"
+        for slot_min in sorted(slots_dict_min.keys()):
+            if slot_min == bucket_start:
+                current_slot = (slot_min, f"{slot_min // 60:02d}:{slot_min % 60:02d}")
+            elif slot_min > bucket_start:
+                future_slots.append(
+                    (slot_min, f"{slot_min // 60:02d}:{slot_min % 60:02d}")
+                )
+            else:  # slot_min < bucket_start
+                past_slots.append(
+                    (slot_min, f"{slot_min // 60:02d}:{slot_min % 60:02d}")
+                )
+
+        # Ordena: futuro → crescente, passado → decrescente
+        future_slots.sort(key=lambda x: x[0])
+        past_slots.sort(key=lambda x: x[0], reverse=True)
+
+        # Monta a lista final: atual, futuros, passados
+        ordered_slots = []
+        if current_slot:
+            ordered_slots.append(current_slot)
+        ordered_slots.extend(future_slots)
+        ordered_slots.extend(past_slots)
+
+        # Botão expandir/colapsar
         if "all_expanded" not in st.session_state:
             st.session_state.all_expanded = False
 
-        # Botão para abrir/fechar todos os dropdowns
         if st.button("Abrir/Fechar todos os horários"):
             st.session_state.all_expanded = not st.session_state.all_expanded
 
-        # Exibe cada slot em um expander
-        for slot in sorted_slots:
-            mobs = slots_dict[slot]
+        # Exibe cada slot
+        for slot_min, slot_str in ordered_slots:
+            mobs = slots_dict_min[slot_min]
+
+            # Define a classe CSS
+            if slot_min == bucket_start:
+                css_class = "slot-current"
+            elif slot_min < bucket_start:
+                css_class = "slot-past"
+            else:
+                css_class = "slot-future"
+
             with st.expander(
-                f"{slot} — {len(mobs)} mob(s)",
+                f"{slot_str} — {len(mobs)} mob(s)",
                 expanded=st.session_state.all_expanded,
             ):
-                if not mobs:
-                    st.write("Nenhum mob nesse horário.")
-                else:
-                    # Linhas de até 4 cards
-                    for i in range(0, len(mobs), 4):
-                        cols = st.columns(4)
-                        for j in range(4):
-                            idx = i + j
-                            if idx < len(mobs):
-                                mob = mobs[idx]
-                                card_html = f"""
-                                <div class="mob-card">
-                                    <img src="{html.escape(mob["thumb"])}"
-                                         onerror="this.style.display='none'"
-                                         alt="miniatura">
-                                    <div style="display:flex; flex-direction:column;">
-                                        <span class="mob-name">{html.escape(mob["name"])}</span>
-                                        <span class="mob-map">{html.escape(mob["mapa"])}</span>
+                with st.markdown(
+                    f"<div class={html.escape(css_class)}>", unsafe_allow_html=True
+                ):
+                    if not mobs:
+                        st.write("Nenhum mob nesse horário.")
+                    else:
+                        for i in range(0, len(mobs), 4):
+                            cols = st.columns(4)
+                            for j in range(4):
+                                idx = i + j
+                                if idx < len(mobs):
+                                    mob = mobs[idx]
+                                    card_html = f"""
+                                    <div class="mob-card">
+                                        <img src="{html.escape(mob["thumb"])}"
+                                            onerror="this.style.display='none'"
+                                            alt="miniatura">
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="mob-name">{html.escape(mob["name"])}</span>
+                                            <span class="mob-map">{html.escape(mob["mapa"])}</span>
+                                        </div>
                                     </div>
-                                </div>
-                                """
-                                with cols[j]:
-                                    st.markdown(card_html, unsafe_allow_html=True)
+                                    """
+                                    with cols[j]:
+                                        st.markdown(card_html, unsafe_allow_html=True)
+
+                st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.info(
         "Faça upload de um arquivo CSV com as colunas: Mob, Miniatura, Mapa, Horarios."
