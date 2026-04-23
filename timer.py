@@ -75,10 +75,11 @@ if uploaded_file is not None:
         # Processa os dados
         mobs_list = []
         for _, row in df.iterrows():
-            mob_name = str(row["mob"])
-            thumb = str(row["miniatura"])
-            mapa = str(row["mapa"])
-            horarios_str = str(row["horarios"])
+            if row["class"] == "Mini-Boss":
+                mob_name = str(row["mob"])
+                thumb = str(row["miniatura"])
+                mapa = str(row["mapa"])
+                horarios_str = str(row["horarios"])
 
             # Converte UTC → UTC-3
             times_utc = [t.strip() for t in horarios_str.split(",") if t.strip()]
@@ -181,6 +182,7 @@ if uploaded_file is not None:
                     if not mobs:
                         st.write("Nenhum mob nesse horário.")
                     else:
+                        # Linhas de até 4 cards
                         for i in range(0, len(mobs), 4):
                             cols = st.columns(4)
                             for j in range(4):
@@ -200,7 +202,6 @@ if uploaded_file is not None:
                                     """
                                     with cols[j]:
                                         st.markdown(card_html, unsafe_allow_html=True)
-
                 st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.info(
