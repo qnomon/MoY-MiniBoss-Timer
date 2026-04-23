@@ -75,27 +75,27 @@ if uploaded_file is not None:
         # Processa os dados
         mobs_list = []
         for _, row in df.iterrows():
-            if row["class"] == "Mini-Boss":
+            if str(row["class"]) == "Mini-Boss":
                 mob_name = str(row["mob"])
                 thumb = str(row["miniatura"])
                 mapa = str(row["mapa"])
                 horarios_str = str(row["horarios"])
 
-            # Converte UTC → UTC-3
-            times_utc = [t.strip() for t in horarios_str.split(",") if t.strip()]
-            converted = []
-            for t in times_utc:
-                try:
-                    h, m = map(int, t.split(":"))
-                    total_min = (h * 60 + m - 3 * 60) % (24 * 60)
-                    new_h = total_min // 60
-                    new_m = total_min % 60
-                    converted.append(f"{new_h:02d}:{new_m:02d}")
-                except ValueError:
-                    continue
-            mobs_list.append(
-                {"name": mob_name, "thumb": thumb, "mapa": mapa, "times": converted}
-            )
+                # Converte UTC → UTC-3
+                times_utc = [t.strip() for t in horarios_str.split(",") if t.strip()]
+                converted = []
+                for t in times_utc:
+                    try:
+                        h, m = map(int, t.split(":"))
+                        total_min = (h * 60 + m - 3 * 60) % (24 * 60)
+                        new_h = total_min // 60
+                        new_m = total_min % 60
+                        converted.append(f"{new_h:02d}:{new_m:02d}")
+                    except ValueError:
+                        continue
+                mobs_list.append(
+                    {"name": mob_name, "thumb": thumb, "mapa": mapa, "times": converted}
+                )
 
         # Cria slots de 10 em 10 min (00:00 a 23:50)
         all_slots = []  # lista de strings
@@ -182,7 +182,6 @@ if uploaded_file is not None:
                     if not mobs:
                         st.write("Nenhum mob nesse horário.")
                     else:
-                        # Linhas de até 4 cards
                         for i in range(0, len(mobs), 4):
                             cols = st.columns(4)
                             for j in range(4):
@@ -202,6 +201,7 @@ if uploaded_file is not None:
                                     """
                                     with cols[j]:
                                         st.markdown(card_html, unsafe_allow_html=True)
+
                 st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.info(
