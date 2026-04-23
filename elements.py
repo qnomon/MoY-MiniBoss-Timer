@@ -23,7 +23,7 @@ element_emojis = {
     "Corrupt": "💀",
     "Neutral": "⚪",
     "Ghost": "👻",
-    "Poison: "🟪",
+    "Poison": "🟪",
 }
 
 # Criar coluna com emoji + nome (para exibição) e manter a original para filtros
