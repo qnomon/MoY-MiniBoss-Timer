@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.caption(f"by: _Qnomon_")
+# st.caption(f"by: _Qnomon_")
 pg = st.navigation(
     [
         st.Page("timer.py", title="Timer", icon="⏱️"),
