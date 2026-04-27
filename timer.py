@@ -13,19 +13,25 @@ st.markdown(
     """
 <style>
     .slot-current {
-        background-color: #d4edda;
+        background-color: #8ef5a7;
         border-radius: 10px;
         padding: 15px;
         margin: 10px 0;
     }
     .slot-past {
-        background-color: #f8d7da;
+        background-color: #ff96a0;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+    .slot-past2 {
+        background-color: #fcf492;
         border-radius: 10px;
         padding: 15px;
         margin: 10px 0;
     }
     .slot-future {
-        background-color: #e2e6f0;
+        background-color: #8daaf2;
         border-radius: 10px;
         padding: 15px;
         margin: 10px 0;
@@ -76,14 +82,28 @@ st.markdown(
         margin-top: 6px;
         font-size: 13px;
     }
+    .header_image {
+        width: 100%;
+        aspect-ratio: 16 / 6;
+        background-image: url('https://i.imgur.com/Ad4ogYX.png');
+        background-size: cover;
+        background-position: center 40%;  /* Ajuste para o texto da sua imagem */
+        background-repeat: no-repeat;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
+st.html("""<div class="header_image">
+
+</div>
+""")
+# with st.container(horizontal_alignment="center"):
+#    st.image("https://i.imgur.com/Ad4ogYX.png", width=600)
 st.title("Agenda de Mobs (UTC-3)")
-with st.container(horizontal_alignment="center"):
-    st.image("https://i.imgur.com/Ad4ogYX.png", width=600)
 
 uploaded_file = "table.csv"
 
@@ -264,7 +284,7 @@ if uploaded_file is not None:
 
         # Botão expandir todos
         if "all_expanded" not in st.session_state:
-            st.session_state.all_expanded = False
+            st.session_state.all_expanded = True
         if st.button("Abrir/Fechar todos os horários"):
             st.session_state.all_expanded = not st.session_state.all_expanded
 
@@ -275,8 +295,10 @@ if uploaded_file is not None:
             # Define classe do container
             if current_slot_min is not None and slot_min == current_slot_min:
                 css_class = "slot-current"
-            elif slot_min in (past1_min, past2_min):
+            elif slot_min == (past2_min):
                 css_class = "slot-past"
+            elif slot_min == (past1_min):
+                css_class = "slot-past2"
             else:
                 css_class = "slot-future"
 
