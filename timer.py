@@ -17,6 +17,8 @@ favoriteList = [
     "Sludge Abomination",
     "Iskralisa",
     "Twisted Twilight",
+    "Silver Thief Bug",
+    "Vocal",
 ]
 
 # 🎨 Estilos CSS
