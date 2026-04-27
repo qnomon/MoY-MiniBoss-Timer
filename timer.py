@@ -66,7 +66,9 @@ st.markdown(
         align-items: center;
     }
     .mob-card-gold {
-        background: linear-gradient(135deg, #7700ff 0%, #05d3fc 100%);
+        /*background: linear-gradient(135deg, #7700ff 0%, #05d3fc 100%);*/
+        background-image: url('https://i.imgur.com/WNEp9aQ.png');
+        background-size: cover;
         border-radius: 10px;
         padding: 8px;
         width: 190px;
@@ -85,8 +87,12 @@ st.markdown(
         color: #f2cb07;
         font-weight: bold;
     }
+    .mob-name-especial {
+        color: #cc08cc;
+        font-weight: bold;
+    }
     .mob-map {
-        color: #b8b8b8;
+        color: #888888;
         font-size: 12px;
     }
     details.mob-details {
@@ -315,6 +321,7 @@ if uploaded_file is not None:
         for slot_min, slot_str in ordered_slots:
             mobs = slots_dict_min[slot_min]
             favorite = ""
+            text = ""
 
             # Define classe do container
             if current_slot_min is not None and slot_min == current_slot_min:
@@ -339,8 +346,10 @@ if uploaded_file is not None:
                     for mob in mobs:
                         if mob["name"] in favoriteList:
                             favorite = "mob-card-gold"
+                            text = "mob-name-especial"
                         else:
                             favorite = "mob-card"
+                            text = "mob-name"
                         card = f"""
                                 <details class="mob-details">
                                     <summary>
@@ -350,7 +359,7 @@ if uploaded_file is not None:
                                                  onerror="this.style.display='none'"
                                                  alt="miniatura">
                                             <div style="display:flex; flex-direction:column;">
-                                                <span class="mob-name">{html.escape(mob["name"])}</span>
+                                                <span class={html.escape(text)}>{html.escape(mob["name"])}</span>
                                                 <span class="mob-map">{html.escape(mob["mapa"])}</span>
                                             </div>
                                         </div>
