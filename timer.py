@@ -7,6 +7,17 @@ from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(layout="wide")
 st_autorefresh(interval=60000, key="refresh")
+favoriteList = [
+    "Ju-On",
+    "Tiki Kanaloa",
+    "Shiosen",
+    "Byrogue",
+    "Vodyanoy",
+    "Vagabond Wolf",
+    "Sludge Abomination",
+    "Iskralisa",
+    "Twisted Twilight",
+]
 
 # 🎨 Estilos CSS
 st.markdown(
@@ -52,7 +63,17 @@ st.markdown(
         display: flex;
         align-items: center;
     }
-    .mob-card img {
+    .mob-card-gold {
+        background: linear-gradient(135deg, #7700ff 0%, #05d3fc 100%);
+        border-radius: 10px;
+        padding: 8px;
+        width: 190px;
+        color: white;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+    }
+    .mob-card img, .mob-card-gold img {
         max-width: 45px;
         max-height: 45px;
         object-fit: contain;
@@ -291,6 +312,7 @@ if uploaded_file is not None:
         # Exibição dos slots
         for slot_min, slot_str in ordered_slots:
             mobs = slots_dict_min[slot_min]
+            favorite = ""
 
             # Define classe do container
             if current_slot_min is not None and slot_min == current_slot_min:
@@ -313,10 +335,14 @@ if uploaded_file is not None:
                 else:
                     cards_html = ""
                     for mob in mobs:
+                        if mob["name"] in favoriteList:
+                            favorite = "mob-card-gold"
+                        else:
+                            favorite = "mob-card"
                         card = f"""
                                 <details class="mob-details">
                                     <summary>
-                                        <div class="mob-card"
+                                        <div class={html.escape(favorite)}
                                              title="Elemento: {html.escape(mob["element"])} | Raça: {html.escape(mob["race"])} | Tamanho: {html.escape(mob["size"])}">
                                             <img src="{html.escape(mob["thumb"])}"
                                                  onerror="this.style.display='none'"
