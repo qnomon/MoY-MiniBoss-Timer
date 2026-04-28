@@ -1,12 +1,29 @@
 import html
+import json
+import time
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
+import requests
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
+
+@st.cache_resource
+def get_sent_alerts():
+    """
+    Retorna um dicionário compartilhado entre todas as sessões.
+    Chave:  "NomeDoMob_2026-04-28T01:40:00-03:00"
+    Valor:  timestamp UNIX de quando o alerta foi enviado.
+    """
+    return {}
+
+
+SENT_ALERTS = get_sent_alerts()
+
 st.set_page_config(layout="wide")
 st_autorefresh(interval=60000, key="refresh")
+webhook_url = "https://discord.com/api/webhooks/1498535746082967753/GLW1cUAzjNHCgjYJBRfJ_Qojl3Ayw9oBerPLLRJLvSWaPGhtCubegOSPBuC2IEg4qbNR"
 favoriteList = [
     "Ju-On",
     "Tiki Kanaloa",
@@ -19,6 +36,7 @@ favoriteList = [
     "Twisted Twilight",
     "Silver Thief Bug",
     "Vocal",
+    "Angeling",
 ]
 
 # 🎨 Estilos CSS
@@ -251,9 +269,108 @@ if uploaded_file is not None:
                     slots_dict_min[min_of_day].append(mob)
 
         # Horário atual (UTC-3)
-        now_utc = datetime.now(timezone.utc)
-        now_local = now_utc - timedelta(hours=3)
+        tz_brasilia = timezone(timedelta(hours=-3))
+        now_local = datetime.now(tz_brasilia)
         curr_min = now_local.hour * 60 + now_local.minute
+        # Inicializa memória de alertas enviados (sessão atual)
+
+        # Verifica monstros favoritos que estão prestes a nascer
+        if webhook_url:  # só envia se a URL foi configurada
+            now_ts = time.time()
+            to_delete = [
+                k for k, ts in SENT_ALERTS.items() if now_ts - ts > 2 * 24 * 3600
+            ]
+            for k in to_delete:
+                del SENT_ALERTS[k]
+
+            for mob in mobs_list:
+                if mob["name"] not in favoriteList:
+                    continue
+
+                # Converte os horários locais (UTC-3) para minutos do dia
+                times_min = []
+                for t_str in mob["times"]:
+                    try:
+                        h, m = map(int, t_str.split(":"))
+                        times_min.append(h * 60 + m)
+                    except:
+                        continue
+
+                if not times_min:
+                    continue
+
+                # Próximo spawn a partir de agora (considera virada de dia)
+                future_times = [t for t in times_min if t >= curr_min]
+                if future_times:
+                    next_spawn_min = min(future_times)
+                    spawn_date = now_local.date()
+                else:
+                    next_spawn_min = min(times_min)  # primeiro do dia seguinte
+                    spawn_date = now_local.date() + timedelta(days=1)
+
+                # Monta a data/hora exata do spawn (UTC-3)
+                spawn_h = next_spawn_min // 60
+                spawn_m = next_spawn_min % 60
+                spawn_dt = datetime(
+                    spawn_date.year,
+                    spawn_date.month,
+                    spawn_date.day,
+                    spawn_h,
+                    spawn_m,
+                    tzinfo=timezone(timedelta(hours=-3)),
+                )
+
+                # Minutos até o spawn
+                time_until = int((spawn_dt - now_local).total_seconds() / 60)
+
+                # Se estiver dentro da janela de 0 a 10 minutos
+                if 0 <= time_until <= 10:
+                    # Chave única por spawn (monstro + data/hora exata)
+                    alert_key = f"{mob['name']}_{spawn_dt.isoformat()}"
+
+                    if alert_key not in SENT_ALERTS:
+                        # Monta mensagem para o Discord
+                        spawn_time_str = f"{spawn_h:02d}:{spawn_m:02d}"
+
+                        embed = {
+                            "title": f"⚠️ {mob['name']} vai nascer em {time_until} min!",
+                            "description": (
+                                f"**Mapa:** {mob['mapa']}\n"
+                                f"**Horário:** {spawn_time_str} (UTC-3)\n"
+                                f"**Data:** {spawn_date.strftime('%d/%m/%Y')}"
+                            ),
+                            "color": 0xF2CB07,  # dourado
+                            "thumbnail": {"url": mob["thumb"]},
+                            "fields": [
+                                {
+                                    "name": "🔥 Elemento",
+                                    "value": mob["element"],
+                                    "inline": True,
+                                },
+                                {
+                                    "name": "🧬 Raça",
+                                    "value": mob["race"],
+                                    "inline": True,
+                                },
+                                {
+                                    "name": "📏 Tamanho",
+                                    "value": mob["size"],
+                                    "inline": True,
+                                },
+                            ],
+                        }
+                        payload = {"embeds": [embed]}
+
+                        try:
+                            response = requests.post(webhook_url, json=payload)
+                            if response.status_code == 204:
+                                SENT_ALERTS[alert_key] = time.time()
+                            else:
+                                st.warning(
+                                    f"Erro ao enviar alerta: {response.status_code}"
+                                )
+                        except Exception as e:
+                            st.warning(f"Falha na conexão com Discord: {e}")
 
         # 1) Encontra o próximo slot (>= curr_min)
         all_slot_minutes = sorted(slots_dict_min.keys())  # 0, 10, 20, ..., 1430
