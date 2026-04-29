@@ -38,7 +38,6 @@ favoriteList = [
     "Vocal",
     "Angeling",
     "Blightwalker",
-    ee,
 ]
 
 # 🎨 Estilos CSS
