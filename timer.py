@@ -37,6 +37,7 @@ favoriteList = [
     "Silver Thief Bug",
     "Vocal",
     "Angeling",
+    "Blightwalker",
 ]
 
 # 🎨 Estilos CSS
@@ -269,8 +270,8 @@ if uploaded_file is not None:
                     slots_dict_min[min_of_day].append(mob)
 
         # Horário atual (UTC-3)
-        tz_brasilia = timezone(timedelta(hours=-3))
-        now_local = datetime.now(tz_brasilia)
+        now_utc = datetime.now(timezone.utc)
+        now_local = now_utc - timedelta(hours=3)
         curr_min = now_local.hour * 60 + now_local.minute
         # Inicializa memória de alertas enviados (sessão atual)
 
