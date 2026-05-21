@@ -1,35 +1,23 @@
-import math
+def hard_def(base_dmg, h_def, reducao_flat=0, reducao_percent=0):
+    final_hdef = (h_def - reducao_flat) * (1 - reducao_percent / 100)
+    dano_final = base_dmg * ((4000 + final_hdef) / (4000 + final_hdef * 10))
+    return dano_final
 
 
-def HardDef(baseDmg, Hdef, reducaoFlat=0, reducaoPercent=0):
-    finalHdef = (Hdef - reducaoFlat) * (1 - reducaoPercent / 100)
-    danoFinal = baseDmg * ((4000 + finalHdef) / (4000 + finalHdef * 10))
-    print(
-        f"Dano Final: {danoFinal:.2f}, Redução: {100 - (danoFinal / baseDmg * 100):.2f}%"
-    )
-    return danoFinal
+def hard_mdef(base_dmg, m_def, reducao_flat=0, reducao_percent=0):
+    final_mdef = (m_def - reducao_flat) * (1 - reducao_percent / 100)
+    dano_final = base_dmg * ((1000 + final_mdef) / (1000 + final_mdef * 10))
+    return dano_final
 
 
-def HardMdef(baseDmg, Mdef, reducaoFlat, reducaoPercent):
-    finalMdef = (Mdef - reducaoFlat) * (1 - reducaoPercent / 100)
-    danoFinal = baseDmg * ((1000 + finalMdef) / (1000 + finalMdef * 10))
-    print(
-        f"Dano Final: {danoFinal:.2f}, Redução: {100 - (danoFinal / baseDmg * 100):.2f}%"
-    )
-    return danoFinal
+def variable_cast(base, reducao_flat, reducao_percent, int_val, dex):
+    stat = 1 - (((dex * 2) + int_val) / 470)
+    rate = 1 - (reducao_percent / 100)
+    vct_final = (base * stat * rate) - reducao_flat
+    return max(vct_final, 0)
 
 
-def VariableCast(base, reducaoFlat, reducaoPercent, int, dex):
-    stat = 1 - (((dex * 2) + int) / 470)
-    rate = 1 - (reducaoPercent / 100)
-    vctFinal = (base * stat * rate) - reducaoFlat
-    return max(vctFinal, 0)
-
-
-def BlitzBeat(baseDmg, skillLvl, baseLvl):
-    dmg = 100 + (skillLvl * 30) + (baseLvl * 3)
-    dmg = baseDmg * (dmg / 100)
+def blitz_beat(base_dmg, skill_lvl, base_lvl):
+    dmg = 100 + (skill_lvl * 30) + (base_lvl * 3)
+    dmg = base_dmg * (dmg / 100)
     return dmg
-
-
-print(BlitzBeat(187, 10, 100))

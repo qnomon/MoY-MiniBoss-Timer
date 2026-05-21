@@ -1,6 +1,8 @@
 import pandas as pd
 import streamlit as st
 
+from constants import element_emojis
+
 st.set_page_config(layout="wide")
 st.title("Tabela elemental")
 
@@ -11,20 +13,6 @@ def load_data():
 
 
 df = load_data()
-
-# Mapeamento de emojis para elementos
-element_emojis = {
-    "Fire": "🔥",
-    "Water": "💧",
-    "Earth": "🌱",
-    "Wind": "💨",
-    "Holy": "✨",
-    "Shadow": "🌑",
-    "Corrupt": "💀",
-    "Neutral": "⚪",
-    "Ghost": "👻",
-    "Poison": "🟪",
-}
 
 # Criar coluna com emoji + nome (para exibição) e manter a original para filtros
 df["Elemento"] = df["Element"].map(element_emojis).fillna("") + " " + df["Element"]
