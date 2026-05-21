@@ -1,14 +1,39 @@
+import json
+import os
+import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 
 import requests
 import streamlit as st
 
+ALERTS_FILE = os.path.join(os.path.dirname(__file__), "sent_alerts.json")
 
-@st.cache_resource
-def get_sent_alerts():
-    """Dicionário compartilhado entre sessões para rastrear alertas enviados."""
-    return {}
+
+def _load_alerts():
+    """Carrega alertas do arquivo JSON."""
+    if not os.path.exists(ALERTS_FILE):
+        return {}
+    try:
+        with open(ALERTS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_alerts(data):
+    """Salva alertas de forma atômica (escreve em tmp e faz rename)."""
+    dir_name = os.path.dirname(ALERTS_FILE)
+    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        os.replace(tmp_path, ALERTS_FILE)
+    except OSError:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 def check_and_send_alerts(mobs_list, favorite_list, webhook_url):
@@ -16,16 +41,17 @@ def check_and_send_alerts(mobs_list, favorite_list, webhook_url):
     if not webhook_url:
         return
 
-    sent_alerts = get_sent_alerts()
+    sent_alerts = _load_alerts()
     tz_brasilia = timezone(timedelta(hours=-3))
     now_local = datetime.now(tz_brasilia)
     curr_min = now_local.hour * 60 + now_local.minute
 
     # Limpa alertas antigos (>2 dias)
     now_ts = time.time()
-    to_delete = [k for k, ts in sent_alerts.items() if now_ts - ts > 2 * 24 * 3600]
-    for k in to_delete:
-        del sent_alerts[k]
+    cleaned = {k: v for k, v in sent_alerts.items() if now_ts - v <= 2 * 24 * 3600}
+
+    changed = len(cleaned) != len(sent_alerts)
+    sent_alerts = cleaned
 
     for mob in mobs_list:
         if mob["name"] not in favorite_list:
@@ -86,7 +112,11 @@ def check_and_send_alerts(mobs_list, favorite_list, webhook_url):
                     response = requests.post(webhook_url, json=payload)
                     if response.status_code == 204:
                         sent_alerts[alert_key] = time.time()
+                        changed = True
                     else:
                         st.warning(f"Erro ao enviar alerta: {response.status_code}")
                 except Exception as e:
                     st.warning(f"Falha na conexão com Discord: {e}")
+
+    if changed:
+        _save_alerts(sent_alerts)
